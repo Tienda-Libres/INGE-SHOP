@@ -7,10 +7,16 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Conexión a MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/tienda_db')
-    .then(() => console.log("✅ Conectado a MongoDB"))
-    .catch(err => console.error("❌ Error de conexión", err));
+// --- CONFIGURACIÓN DE VARIABLES DINÁMICAS ---
+// Render llenará process.env.MONGO_URI automáticamente con lo que pusimos en su panel.
+// Si no existe (estás en tu PC), usará la base de datos local.
+const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/tienda_db';
+const PORT = process.env.PORT || 10000;
+
+// --- CONEXIÓN A MONGODB ---
+mongoose.connect(mongoURI)
+    .then(() => console.log("✅ Conexión exitosa a MongoDB"))
+    .catch(err => console.error("❌ Error de conexión:", err));
 
 // Esquema del Producto
 const productoSchema = new mongoose.Schema({
@@ -23,7 +29,9 @@ const productoSchema = new mongoose.Schema({
 
 const Producto = mongoose.model('Producto', productoSchema);
 
-// RUTA PARA CLIENTES (Aquí estaba el posible error 500)
+// --- RUTAS API ---
+
+// RUTA PARA CLIENTES
 app.get('/api/productos', async (req, res) => {
     try {
         const productos = await Producto.find({});
@@ -63,7 +71,7 @@ app.put('/api/productos/:id', async (req, res) => {
     }
 });
 
-// RUTA PARA ELIMINAR UN PRODUCTO (Opcional, pero muy útil)
+// RUTA PARA ELIMINAR
 app.delete('/api/productos/:id', async (req, res) => {
     try {
         await Producto.findByIdAndDelete(req.params.id);
@@ -73,5 +81,8 @@ app.delete('/api/productos/:id', async (req, res) => {
     }
 });
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
+// --- ENCENDER SERVIDOR ---
+// IMPORTANTE: Agregamos '0.0.0.0' para que Render pueda encontrar el servicio externamente
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Servidor listo y escuchando en el puerto ${PORT}`);
+});
