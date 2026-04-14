@@ -322,7 +322,7 @@
             contenedor.innerHTML = '<p style="text-align:center;color:#666;width:100%;">Cargando colección exclusiva...</p>';
 
             try {
-                const respuesta = await fetch('http://localhost:3000/api/productos');
+                const respuesta = await fetch('https://inge-shop.onrender.com/api/productos');
                 
                 if (!respuesta.ok) {
                     throw new Error(`Error del servidor: ${respuesta.status}`);
@@ -375,7 +375,7 @@
 async function cargarProductos() {
     const contenedor = document.getElementById('contenedor');
     try {
-        const respuesta = await fetch('http://localhost:3000/api/productos');
+        const respuesta = await fetch('https://inge-shop.onrender.com/api/productos');
         productosLocales = await respuesta.json(); // Guardamos una copia
         renderizar(productosLocales); // Función que dibuja los productos
     } catch (error) {

@@ -81,7 +81,7 @@
 
     async function cargar() {
         try {
-            const res = await fetch('http://localhost:3000/api/productos');
+            const res = await fetch('https://inge-shop.onrender.com/api/productos');
             const productos = await res.json();
             lista.innerHTML = ""; 
 
@@ -135,7 +135,7 @@
             categoria: document.getElementById('categoria').value // Enviamos la categoría
         };
 
-        const url = editando ? `http://localhost:3000/api/productos/${id}` : 'http://localhost:3000/api/productos';
+        const url = editando ? `https://inge-shop.onrender.com/api/productos/${id}` : 'https://inge-shop.onrender.com/api/productos';
         const metodo = editando ? 'PUT' : 'POST';
 
         try {
@@ -156,7 +156,7 @@
 
     async function eliminar(id) {
         if(confirm("¿Estás segura de eliminar este producto?")) {
-            await fetch(`http://localhost:3000/api/productos/${id}`, { method: 'DELETE' });
+            await fetch(`https://inge-shop.onrender.com/api/productos/${id}`, { method: 'DELETE' });
             cargar();
         }
     }
