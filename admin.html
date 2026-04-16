@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --gold: #D4AF37; --text-dark: #121212; }
-        body { font-family: 'Outfit', sans-serif; background: #e1e1e1; margin: 0; padding: 40px; color: var(--text-dark); }
+        body { font-family: 'Outfit', sans-serif; background: #e1e1e1; margin: 0; padding: 40px; color: var(--text-dark); position: relative; }
         .container { max-width: 900px; margin: auto; }
         .card-admin { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(212,175,55,0.2); margin-bottom: 30px; }
         h2 { text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-top: 0; background: linear-gradient(to right, #333, var(--gold), #333); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
@@ -16,11 +16,21 @@
         button { width: 100%; padding: 15px; background: var(--text-dark); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
         button:hover { background: var(--gold); transform: translateY(-2px); }
         
+        /* BOTÓN FLOTANTE */
+        .btn-flotante { position: fixed; bottom: 30px; right: 30px; width: 180px; background: var(--gold); box-shadow: 0 5px 20px rgba(0,0,0,0.2); z-index: 100; }
+
+        /* VENTANA FLOTANTE (MODAL) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
+        
+        .fila-venta { display: flex; gap: 8px; margin-bottom: 8px; }
+        .btn-add-item { background: #f0f0f0; color: #333; padding: 10px; margin-bottom: 15px; font-size: 0.7rem; }
+        .btn-ws { background: #25D366; }
+
         .product-list { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .product-item { background: white; border-bottom: 1px solid #bcbcbc; transition: 0.3s; }
+        .product-item { background: white; border-bottom: 1px solid #bcbcbc; }
         .product-item td { padding: 15px; font-size: 0.9rem; }
-        .btn-edit { background: #e1e1e1; color: #555; padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; margin-right: 5px; font-family: 'Outfit'; }
-        .btn-delete { background: #ffebee; color: #c62828; padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-family: 'Outfit'; }
     </style>
 </head>
 <body>
@@ -30,41 +40,23 @@
         <h2 id="formTitle">Subir Nuevo Producto</h2>
         <form id="prodForm">
             <input type="hidden" id="prodId"> 
-            
-            <div class="input-group">
-                <label>Nombre del Producto</label>
-                <input type="text" id="nombre" required placeholder="Ej. Perfume Sweet Candy">
-            </div>
-
+            <div class="input-group"><label>Nombre</label><input type="text" id="nombre" required></div>
             <div class="input-group">
                 <label>Categoría</label>
                 <select id="categoria" required>
-                    <option value="" disabled selected>Selecciona una categoría</option>
                     <option value="Perfumes">Perfumes</option>
                     <option value="Bisutería">Bisutería</option>
                     <option value="Juguetes">Juguetes</option>
                     <option value="Moda">Moda</option>
                 </select>
             </div>
-
             <div style="display: flex; gap: 15px;">
-                <div class="input-group" style="flex:1">
-                    <label>Precio (MXN)</label>
-                    <input type="number" id="precio" required placeholder="0.00">
-                </div>
-                <div class="input-group" style="flex:1">
-                    <label>Existencias</label>
-                    <input type="number" id="existencias" required placeholder="Cantidad">
-                </div>
+                <input type="number" id="precio" placeholder="Precio" required>
+                <input type="number" id="existencias" placeholder="Stock" required>
             </div>
-
-            <div class="input-group">
-                <label>URL Imagen o Video (Direct Link)</label>
-                <input type="text" id="imagen" required placeholder="https://i.imgur.com/...">
-            </div>
-
+            <div class="input-group" style="margin-top:15px;"><label>URL Imagen</label><input type="text" id="imagen" required></div>
             <button type="submit" id="mainBtn">Guardar Producto</button>
-            <button type="button" id="cancelBtn" style="display:none; background:#888; margin-top:10px;">Cancelar Edición</button>
+            <button type="button" id="cancelBtn" style="display:none; background:#888; margin-top:10px;">Cancelar</button>
         </form>
     </div>
 
@@ -74,8 +66,91 @@
     </div>
 </div>
 
+<button class="btn-flotante" onclick="abrirVenta()">💰 Generar Venta</button>
+
+<div id="modalVenta" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="cerrarVenta()">&times;</span>
+        <h2 style="font-size: 1.2rem;">Nueva Venta</h2>
+        
+        <div id="lista-articulos">
+            <div class="fila-venta">
+                <input type="text" class="v-nombre" placeholder="Producto" style="flex:2">
+                <input type="number" class="v-precio" placeholder="$" style="flex:1">
+                <input type="number" class="v-cant" value="1" style="flex:0.5">
+            </div>
+        </div>
+        
+        <button class="btn-add-item" onclick="nuevaFilaVenta()">+ Añadir Producto</button>
+
+        <div class="input-group"><label>Descuento ($)</label><input type="number" id="v-desc" value="0"></div>
+        <div class="input-group">
+            <label>Método</label>
+            <select id="v-metodo">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+            </select>
+        </div>
+        <div class="input-group"><label>WhatsApp Cliente (con 52)</label><input type="tel" id="v-tel" placeholder="52276..."></div>
+        
+        <button class="btn-ws" onclick="enviarVentaWS()">Enviar por WhatsApp 📲</button>
+    </div>
+</div>
+
 <script>
+    // --- FUNCIONES DE LA VENTANA FLOTANTE ---
+    function abrirVenta() { document.getElementById('modalVenta').style.display = 'flex'; }
+    function cerrarVenta() { document.getElementById('modalVenta').style.display = 'none'; }
     
+    function nuevaFilaVenta() {
+        const div = document.createElement('div');
+        div.className = 'fila-venta';
+        div.innerHTML = `
+            <input type="text" class="v-nombre" placeholder="Producto" style="flex:2">
+            <input type="number" class="v-precio" placeholder="$" style="flex:1">
+            <input type="number" class="v-cant" value="1" style="flex:0.5">
+        `;
+        document.getElementById('lista-articulos').appendChild(div);
+    }
+
+    function enviarVentaWS() {
+        const nombres = document.querySelectorAll('.v-nombre');
+        const precios = document.querySelectorAll('.v-precio');
+        const cantidades = document.querySelectorAll('.v-cant');
+        const desc = parseFloat(document.getElementById('v-desc').value) || 0;
+        const tel = document.getElementById('v-tel').value;
+        const metodo = document.getElementById('v-metodo').value;
+        const fecha = new Date().toLocaleString();
+
+        let items = "";
+        let subtotal = 0;
+        let cantTotal = 0;
+
+        nombres.forEach((n, i) => {
+            if(n.value) {
+                let s = parseFloat(precios[i].value) * parseInt(cantidades[i].value);
+                items += `🔹 ${n.value}\n   ${cantidades[i].value} x $${precios[i].value} = $${s.toFixed(2)}\n`;
+                subtotal += s;
+                cantTotal += parseInt(cantidades[i].value);
+            }
+        });
+
+        let total = subtotal - desc;
+        let msj = `*🛍️ TICKET - INGE SHOP*\n`;
+        msj += `------------------------------------------\n`;
+        msj += `📍 *Contacto:*\n📞 2761137068 | 241376199\n📸 FB: INGE SHOP | IG: ingeshop.oficial\n`;
+        msj += `------------------------------------------\n`;
+        msj += `📅 ${fecha}\n------------------------------------------\n\n`;
+        msj += `${items}\n------------------------------------------\n`;
+        if(desc > 0) msj += `📉 Descuento: -$${desc.toFixed(2)}\n`;
+        msj += `📦 Cantidad: ${cantTotal}\n💰 *TOTAL: $${total.toFixed(2)}*\n💳 Pago: ${metodo}\n`;
+        msj += `------------------------------------------\n\n✨ *¡Gracias por tu compra en INGE SHOP! Esperamos verte pronto.*`;
+
+        if(!tel) return alert("Escribe el número del cliente");
+        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msj)}`, '_blank');
+    }
+
+    // --- TU LÓGICA DE INVENTARIO ---
     const form = document.getElementById('prodForm');
     const lista = document.getElementById('lista');
     let editando = false;
@@ -85,44 +160,35 @@
             const res = await fetch('https://inge-shop.onrender.com/api/productos');
             const productos = await res.json();
             lista.innerHTML = ""; 
-
             productos.forEach(p => {
                 const fila = document.createElement('tr');
                 fila.className = 'product-item';
                 fila.innerHTML = `
-                    <td><strong>${p.nombre}</strong><br><small style="color:var(--gold)">${p.categoria || 'Sin categoría'}</small></td>
+                    <td><strong>${p.nombre}</strong><br><small style="color:var(--gold)">${p.categoria}</small></td>
                     <td>$${p.precio}</td>
                     <td>${p.existencias} pzs</td>
                     <td style="text-align:right">
-                        <button class="btn-edit">EDITAR</button>
+                        <button class="btn-edit" onclick="prepararEdicion('${p._id}','${p.nombre}',${p.precio},${p.existencias},'${p.imagen}','${p.categoria}')">EDITAR</button>
                         <button class="btn-delete" onclick="eliminar('${p._id}')">BORRAR</button>
                     </td>
                 `;
-
-                fila.querySelector('.btn-edit').onclick = () => {
-                    prepararEdicion(p._id, p.nombre, p.precio, p.existencias, p.imagen, p.categoria);
-                };
-
                 lista.appendChild(fila);
             });
-        } catch (e) { 
-            console.error("Error al cargar inventario:", e); 
-        }
+        } catch (e) { console.error(e); }
     }
 
-    function prepararEdicion(id, nombre, precio, existencias, imagen, categoria) {
+    function prepararEdicion(id, n, p, e, i, c) {
         editando = true;
         document.getElementById('prodId').value = id;
-        document.getElementById('nombre').value = nombre;
-        document.getElementById('precio').value = precio;
-        document.getElementById('existencias').value = existencias;
-        document.getElementById('imagen').value = imagen;
-        document.getElementById('categoria').value = categoria || ""; // Cargamos la categoría
-        
-        document.getElementById('formTitle').textContent = "Editando Producto";
-        document.getElementById('mainBtn').textContent = "Confirmar Cambios";
+        document.getElementById('nombre').value = n;
+        document.getElementById('precio').value = p;
+        document.getElementById('existencias').value = e;
+        document.getElementById('imagen').value = i;
+        document.getElementById('categoria').value = c;
+        document.getElementById('formTitle').innerText = "Editando...";
+        document.getElementById('mainBtn').innerText = "Guardar Cambios";
         document.getElementById('cancelBtn').style.display = "block";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo(0,0);
     }
 
     form.onsubmit = async (e) => {
@@ -133,37 +199,15 @@
             precio: Number(document.getElementById('precio').value),
             existencias: Number(document.getElementById('existencias').value),
             imagen: document.getElementById('imagen').value,
-            categoria: document.getElementById('categoria').value // Enviamos la categoría
+            categoria: document.getElementById('categoria').value
         };
-
         const url = editando ? `https://inge-shop.onrender.com/api/productos/${id}` : 'https://inge-shop.onrender.com/api/productos';
-        const metodo = editando ? 'PUT' : 'POST';
-
-        try {
-            const response = await fetch(url, {
-                method: metodo,
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(datos)
-            });
-
-            if (response.ok) {
-                alert(editando ? "✨ ¡Producto actualizado!" : "✅ ¡Producto guardado!");
-                location.reload();
-            }
-        } catch (err) {
-            alert("Error al conectar con el servidor");
-        }
+        await fetch(url, { method: editando ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(datos) });
+        location.reload();
     }
 
-    async function eliminar(id) {
-        if(confirm("¿Estás segura de eliminar este producto?")) {
-            await fetch(`https://inge-shop.onrender.com/api/productos/${id}`, { method: 'DELETE' });
-            cargar();
-        }
-    }
-
+    async function eliminar(id) { if(confirm("¿Borrar?")) { await fetch(`https://inge-shop.onrender.com/api/productos/${id}`, {method:'DELETE'}); cargar(); } }
     document.getElementById('cancelBtn').onclick = () => location.reload();
-
     cargar();
 </script>
 </body>
