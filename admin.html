@@ -24,7 +24,7 @@
         .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: #888; }
         
-        .fila-venta { display: flex; gap: 8px; margin-bottom: 8px; }
+        .fila-venta { border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 10px; }
         .btn-add-item { background: #f0f0f0; color: #333; padding: 10px; margin-bottom: 15px; font-size: 0.7rem; }
         .btn-ws { background: #25D366; }
 
@@ -71,96 +71,60 @@
 <div id="modalVenta" class="modal">
     <div class="modal-content">
         <span class="close-modal" onclick="cerrarVenta()">&times;</span>
-        <h2 style="font-size: 1.2rem;">Nueva Venta</h2>
+        <h2 style="font-size: 1.2rem;">Nueva Venta Profesional</h2>
         
+        <div class="input-group">
+            <label>Filtrar por Categoría</label>
+            <select id="filtro-categoria" onchange="actualizarListasVenta()">
+                <option value="Todos">Todos</option>
+                <option value="Perfumes">Perfumes</option>
+                <option value="Bisutería">Bisutería</option>
+                <option value="Juguetes">Juguetes</option>
+                <option value="Moda">Moda</option>
+            </select>
+        </div>
+
         <div id="lista-articulos">
             <div class="fila-venta">
-                <input type="text" class="v-nombre" placeholder="Producto" style="flex:2">
-                <input type="number" class="v-precio" placeholder="$" style="flex:1">
-                <input type="number" class="v-cant" value="1" style="flex:0.5">
+                <label>Producto</label>
+                <select class="v-id" onchange="seleccionarProducto(this)" style="margin-bottom:5px;">
+                    <option value="">Selecciona un producto...</option>
+                </select>
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" class="v-precio" placeholder="Precio $" style="flex:1">
+                    <input type="number" class="v-cant" value="1" style="flex:0.5">
+                </div>
             </div>
         </div>
         
         <button class="btn-add-item" onclick="nuevaFilaVenta()">+ Añadir Producto</button>
 
-        <div class="input-group"><label>Descuento ($)</label><input type="number" id="v-desc" value="0"></div>
+        <div class="input-group"><label>Descuento Directo ($)</label><input type="number" id="v-desc" value="0"></div>
         <div class="input-group">
-            <label>Método</label>
+            <label>Método de Pago</label>
             <select id="v-metodo">
                 <option value="Efectivo">Efectivo</option>
                 <option value="Transferencia">Transferencia</option>
             </select>
         </div>
-        <div class="input-group"><label>WhatsApp Cliente (con 52)</label><input type="tel" id="v-tel" placeholder="52276..."></div>
         
-        <button class="btn-ws" onclick="enviarVentaWS()">Enviar por WhatsApp 📲</button>
+        <button class="btn-ws" onclick="enviarVentaWS()">Enviar y Descontar Stock 📲</button>
     </div>
 </div>
 
 <script>
-    // --- FUNCIONES DE LA VENTANA FLOTANTE ---
-    function abrirVenta() { document.getElementById('modalVenta').style.display = 'flex'; }
-    function cerrarVenta() { document.getElementById('modalVenta').style.display = 'none'; }
-    
-    function nuevaFilaVenta() {
-        const div = document.createElement('div');
-        div.className = 'fila-venta';
-        div.innerHTML = `
-            <input type="text" class="v-nombre" placeholder="Producto" style="flex:2">
-            <input type="number" class="v-precio" placeholder="$" style="flex:1">
-            <input type="number" class="v-cant" value="1" style="flex:0.5">
-        `;
-        document.getElementById('lista-articulos').appendChild(div);
-    }
-
-    function enviarVentaWS() {
-        const nombres = document.querySelectorAll('.v-nombre');
-        const precios = document.querySelectorAll('.v-precio');
-        const cantidades = document.querySelectorAll('.v-cant');
-        const desc = parseFloat(document.getElementById('v-desc').value) || 0;
-        const tel = document.getElementById('v-tel').value;
-        const metodo = document.getElementById('v-metodo').value;
-        const fecha = new Date().toLocaleString();
-
-        let items = "";
-        let subtotal = 0;
-        let cantTotal = 0;
-
-        nombres.forEach((n, i) => {
-            if(n.value) {
-                let s = parseFloat(precios[i].value) * parseInt(cantidades[i].value);
-                items += `🔹 ${n.value}\n   ${cantidades[i].value} x $${precios[i].value} = $${s.toFixed(2)}\n`;
-                subtotal += s;
-                cantTotal += parseInt(cantidades[i].value);
-            }
-        });
-
-        let total = subtotal - desc;
-        let msj = `*🛍️ TICKET - INGE SHOP*\n`;
-        msj += `------------------------------------------\n`;
-        msj += `📍 *Contacto:*\n📞 2761137068 | 241376199\n📸 FB: INGE SHOP | IG: ingeshop.oficial\n`;
-        msj += `------------------------------------------\n`;
-        msj += `📅 ${fecha}\n------------------------------------------\n\n`;
-        msj += `${items}\n------------------------------------------\n`;
-        if(desc > 0) msj += `📉 Descuento: -$${desc.toFixed(2)}\n`;
-        msj += `📦 Cantidad: ${cantTotal}\n💰 *TOTAL: $${total.toFixed(2)}*\n💳 Pago: ${metodo}\n`;
-        msj += `------------------------------------------\n\n✨ *¡Gracias por tu compra en INGE SHOP! Esperamos verte pronto.*`;
-
-        if(!tel) return alert("Escribe el número del cliente");
-        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msj)}`, '_blank');
-    }
-
-    // --- TU LÓGICA DE INVENTARIO ---
     const form = document.getElementById('prodForm');
     const lista = document.getElementById('lista');
     let editando = false;
+    let productosBD = [];
 
+    // --- CARGAR PRODUCTOS ---
     async function cargar() {
         try {
             const res = await fetch('https://inge-shop.onrender.com/api/productos');
-            const productos = await res.json();
+            productosBD = await res.json();
             lista.innerHTML = ""; 
-            productos.forEach(p => {
+            productosBD.forEach(p => {
                 const fila = document.createElement('tr');
                 fila.className = 'product-item';
                 fila.innerHTML = `
@@ -174,9 +138,103 @@
                 `;
                 lista.appendChild(fila);
             });
+            actualizarListasVenta();
         } catch (e) { console.error(e); }
     }
 
+    // --- LÓGICA DE VENTA ---
+    function abrirVenta() { document.getElementById('modalVenta').style.display = 'flex'; actualizarListasVenta(); }
+    function cerrarVenta() { document.getElementById('modalVenta').style.display = 'none'; }
+    
+    function actualizarListasVenta() {
+        const cat = document.getElementById('filtro-categoria').value;
+        const selects = document.querySelectorAll('.v-id');
+        selects.forEach(sel => {
+            const valAnterior = sel.value;
+            sel.innerHTML = '<option value="">Selecciona un producto...</option>';
+            productosBD.filter(p => cat === "Todos" || p.categoria === cat).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p._id;
+                opt.text = `${p.nombre} (${p.existencias} disp.)`;
+                opt.dataset.precio = p.precio;
+                opt.dataset.nombre = p.nombre;
+                opt.dataset.stock = p.existencias;
+                sel.appendChild(opt);
+            });
+            sel.value = valAnterior;
+        });
+    }
+
+    function seleccionarProducto(el) {
+        const opt = el.options[el.selectedIndex];
+        el.closest('.fila-venta').querySelector('.v-precio').value = opt.dataset.precio || 0;
+    }
+
+    function nuevaFilaVenta() {
+        const div = document.createElement('div');
+        div.className = 'fila-venta';
+        div.innerHTML = `
+            <select class="v-id" onchange="seleccionarProducto(this)" style="margin-bottom:5px;">
+                <option value="">Selecciona un producto...</option>
+            </select>
+            <div style="display: flex; gap: 5px;">
+                <input type="number" class="v-precio" placeholder="Precio $" style="flex:1">
+                <input type="number" class="v-cant" value="1" style="flex:0.5">
+            </div>
+        `;
+        document.getElementById('lista-articulos').appendChild(div);
+        actualizarListasVenta();
+    }
+
+    async function enviarVentaWS() {
+        const ids = document.querySelectorAll('.v-id');
+        const precios = document.querySelectorAll('.v-precio');
+        const cantidades = document.querySelectorAll('.v-cant');
+        const desc = parseFloat(document.getElementById('v-desc').value) || 0;
+        const metodo = document.getElementById('v-metodo').value;
+        
+        let itemsMsj = "";
+        let subtotal = 0;
+
+        for (let i = 0; i < ids.length; i++) {
+            if (ids[i].value) {
+                const opt = ids[i].options[ids[i].selectedIndex];
+                const id = ids[i].value;
+                const cant = parseInt(cantidades[i].value);
+                const precio = parseFloat(precios[i].value);
+                const stockActual = parseInt(opt.dataset.stock);
+
+                if (cant > stockActual) {
+                    alert(`No hay suficiente stock de ${opt.dataset.nombre}`);
+                    return;
+                }
+
+                // Descontar en la base de datos
+                await fetch(`https://inge-shop.onrender.com/api/productos/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ existencias: stockActual - cant })
+                });
+
+                let s = precio * cant;
+                itemsMsj += `🔹 ${opt.dataset.nombre}\n   ${cant} x $${precio} = $${s.toFixed(2)}\n`;
+                subtotal += s;
+            }
+        }
+
+        const total = subtotal - desc;
+        const fecha = new Date().toLocaleString();
+        let msj = `*🛍️ TICKET - INGE SHOP*\n------------------------------------------\n`;
+        msj += `📍 *Contacto:*\n📞 2761137068 | 241376199\n------------------------------------------\n`;
+        msj += `📅 ${fecha}\n------------------------------------------\n\n${itemsMsj}\n`;
+        if(desc > 0) msj += `📉 Descuento: -$${desc.toFixed(2)}\n`;
+        msj += `💰 *TOTAL: $${total.toFixed(2)}*\n💳 Pago: ${metodo}\n------------------------------------------\n\n✨ *¡Gracias por comprar en INGE SHOP!*`;
+
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msj)}`, '_blank');
+        location.reload(); // Recarga para ver el stock actualizado
+    }
+
+    // --- FUNCIONES INVENTARIO ---
     function prepararEdicion(id, n, p, e, i, c) {
         editando = true;
         document.getElementById('prodId').value = id;
