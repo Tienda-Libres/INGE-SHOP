@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>INGE SHOP | Gestión Profesional</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --gold: #D4AF37; --text-dark: #121212; }
         body { font-family: 'Outfit', sans-serif; background: #e1e1e1; margin: 0; padding: 40px; color: var(--text-dark); position: relative; }
@@ -31,6 +32,12 @@
         .product-list { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .product-item { background: white; border-bottom: 1px solid #bcbcbc; }
         .product-item td { padding: 15px; font-size: 0.9rem; }
+
+        /* ESTILOS DEL TICKET VISUAL (OCULTO) */
+        #ticket-visual { width: 300px; padding: 20px; background: white; font-family: 'Courier New', Courier, monospace; font-size: 12px; position: absolute; left: -9999px; top: 0; color: black; line-height: 1.2; }
+        #ticket-visual .header { text-align: center; text-transform: uppercase; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+        #ticket-visual .separator { border-top: 1px dashed black; margin: 5px 0; }
+        #ticket-visual .total { font-weight: bold; font-size: 13px; text-align: right; }
     </style>
 </head>
 <body>
@@ -108,8 +115,28 @@
             </select>
         </div>
         
-        <button class="btn-ws" onclick="enviarVentaWS()">Enviar y Descontar Stock 📲</button>
+        <button class="btn-ws" onclick="generarTicketImagen()">Generar e Descontar Stock 📲</button>
     </div>
+</div>
+
+<div id="ticket-visual">
+    <div class="header">INGE SHOP</div>
+    <div style="text-align:center;">Libres, Puebla</div>
+    <div class="separator"></div>
+    <div>📍 Contacto:</div>
+    <div>📞 2761137068 | 241376199</div>
+    <div>📸 FB: INGE SHOP | IG: ingeshop.oficial</div>
+    <div class="separator"></div>
+    <div id="ticket-fecha"></div>
+    <div class="separator"></div>
+    <table style="width:100%; border-collapse:collapse;" id="ticket-items">
+        </table>
+    <div class="separator"></div>
+    <div id="ticket-descuento"></div>
+    <div class="total" id="ticket-total"></div>
+    <div>💳 Pago: <span id="ticket-metodo"></span></div>
+    <div class="separator"></div>
+    <div style="text-align:center; font-style:italic; margin-top:10px;">✨ ¡Gracias por comprar en INGE SHOP!</div>
 </div>
 
 <script>
@@ -186,16 +213,18 @@
         actualizarListasVenta();
     }
 
-    async function enviarVentaWS() {
+    async function generarTicketImagen() {
         const ids = document.querySelectorAll('.v-id');
         const precios = document.querySelectorAll('.v-precio');
         const cantidades = document.querySelectorAll('.v-cant');
         const desc = parseFloat(document.getElementById('v-desc').value) || 0;
         const metodo = document.getElementById('v-metodo').value;
         
-        let itemsMsj = "";
         let subtotal = 0;
+        const ticketItemsTable = document.getElementById('ticket-items');
+        ticketItemsTable.innerHTML = ""; // Limpiar ticket visual
 
+        // 1. Validar y llenar ticket visual (oculto)
         for (let i = 0; i < ids.length; i++) {
             if (ids[i].value) {
                 const opt = ids[i].options[ids[i].selectedIndex];
@@ -209,7 +238,7 @@
                     return;
                 }
 
-                // Descontar en la base de datos
+                // Descontar en la base de datos (Render)
                 await fetch(`https://inge-shop.onrender.com/api/productos/${id}`, {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
@@ -217,24 +246,55 @@
                 });
 
                 let s = precio * cant;
-                itemsMsj += `🔹 ${opt.dataset.nombre}\n   ${cant} x $${precio} = $${s.toFixed(2)}\n`;
                 subtotal += s;
+
+                // Llenar fila en el ticket visual
+                const fila = `
+                    <tr>
+                        <td style="width:60%;">${opt.dataset.nombre}</td>
+                        <td style="width:15%; text-align:right;">x${cant}</td>
+                        <td style="width:25%; text-align:right;">$${s.toFixed(2)}</td>
+                    </tr>
+                `;
+                ticketItemsTable.insertAdjacentHTML('beforeend', fila);
             }
         }
 
         const total = subtotal - desc;
         const fecha = new Date().toLocaleString();
-        let msj = `*🛍️ TICKET - INGE SHOP*\n------------------------------------------\n`;
-        msj += `📍 *Contacto:*\n📞 2761137068 | 241376199\n------------------------------------------\n`;
-        msj += `📅 ${fecha}\n------------------------------------------\n\n${itemsMsj}\n`;
-        if(desc > 0) msj += `📉 Descuento: -$${desc.toFixed(2)}\n`;
-        msj += `💰 *TOTAL: $${total.toFixed(2)}*\n💳 Pago: ${metodo}\n------------------------------------------\n\n✨ *¡Gracias por comprar en INGE SHOP!*`;
+        
+        // 2. Actualizar datos finales en el ticket visual
+        document.getElementById('ticket-fecha').innerText = `📅 ${fecha}`;
+        document.getElementById('ticket-descuento').innerText = desc > 0 ? `📉 Descuento: -$${desc.toFixed(2)}` : '';
+        document.getElementById('ticket-total').innerText = `💰 TOTAL: $${total.toFixed(2)}`;
+        document.getElementById('ticket-metodo').innerText = metodo;
 
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msj)}`, '_blank');
-        location.reload(); // Recarga para ver el stock actualizado
+        // 3. Convertir Ticket HTML a Imagen usando html2canvas
+        const ticketDiv = document.getElementById('ticket-visual');
+        
+        html2canvas(ticketDiv).then(canvas => {
+            const imgData = canvas.toDataURL('image/png'); // Imagen Base64
+            
+            // 4. Preparar WhatsApp. No se puede enviar imagen Base64 directo,
+            // pero podemos dar instrucciones y el mensaje de texto.
+            const msjTexto = `*TICKET DIGITAL - INGE SHOP*\n----------------------------------\n📍 Libres, Puebla\n📞 2761137068\n----------------------------------\n✨ Aquí tienes tu recibo de compra. ¡Gracias por tu confianza!`;
+            
+            // Abrir WhatsApp con texto y preparar descarga de imagen
+            const wsUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msjTexto)}`;
+            window.open(wsUrl, '_blank');
+
+            // Descargar imagen automáticamente para que tú la reenvíes
+            const linkDescarga = document.createElement('a');
+            linkDescarga.download = `Ticket-INGE_SHOP-${Date.now()}.png`;
+            linkDescarga.href = imgData;
+            linkDescarga.click();
+
+            alert("✨ Stock descontado. Se ha abierto WhatsApp y se ha descargado el Ticket en imagen. Reenvía la imagen a tu cliente en su chat.");
+            location.reload(); // Recarga para ver el stock actualizado
+        });
     }
 
-    // --- FUNCIONES INVENTARIO ---
+    // --- FUNCIONES INVENTARIO (ORIGINALES) ---
     function prepararEdicion(id, n, p, e, i, c) {
         editando = true;
         document.getElementById('prodId').value = id;
