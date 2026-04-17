@@ -30,7 +30,7 @@
         .product-item { background: white; border-bottom: 1px solid #bcbcbc; }
         .product-item td { padding: 15px; font-size: 0.9rem; }
 
-        /* TICKET OCULTO */
+        /* TICKET VISUAL MEJORADO */
         #ticket-visual { width: 320px; padding: 25px; background: white; font-family: 'Courier New', monospace; position: absolute; left: -9999px; color: black; border: 1px solid #eee; }
     </style>
 </head>
@@ -73,12 +73,8 @@
     <div class="modal-content">
         <span class="close-modal" onclick="cerrarVenta()">&times;</span>
         <h2 style="font-size: 1.2rem;">Nueva Venta Multicategoría</h2>
-        
-        <div id="lista-articulos">
-            </div>
-        
-        <button class="btn-add-item" onclick="nuevaFilaVenta()">+ Añadir Producto (Cualquier Categoría)</button>
-
+        <div id="lista-articulos"></div>
+        <button class="btn-add-item" onclick="nuevaFilaVenta()">+ Añadir Producto</button>
         <div class="input-group"><label>Descuento total ($)</label><input type="number" id="v-desc" value="0"></div>
         <div class="input-group">
             <label>Método de Pago</label>
@@ -87,23 +83,38 @@
                 <option value="Transferencia">Transferencia</option>
             </select>
         </div>
-        
         <button class="btn-ws" onclick="procesarVentaImagen()">Generar Ticket y Descontar 📲</button>
     </div>
 </div>
 
 <div id="ticket-visual">
-    <div style="text-align:center; font-weight:bold; font-size:18px;">INGE SHOP</div>
-    <div style="text-align:center; font-size:10px;">LIBRES, PUEBLA</div>
-    <div style="border-top:1px dashed #000; margin:10px 0;"></div>
-    <div id="t-fecha" style="font-size:11px; margin-bottom:10px;"></div>
-    <table style="width:100%; font-size:12px; border-collapse:collapse;" id="t-items"></table>
-    <div style="border-top:1px dashed #000; margin:10px 0;"></div>
-    <div id="t-desc" style="text-align:right; font-size:12px;"></div>
-    <div id="t-total" style="text-align:right; font-weight:bold; font-size:14px; margin:5px 0;"></div>
+    <div style="text-align:center; font-weight:bold; font-size:16px;">TICKET - INGE SHOP</div>
+    <div style="border-top:1px dashed #000; margin:5px 0;"></div>
+    <div style="font-size:11px; text-align:center;">
+        📍 Contacto:<br>
+        📞 2761137068 | 241376199
+    </div>
+    <div style="border-top:1px dashed #000; margin:5px 0;"></div>
+    <div id="t-fecha" style="font-size:11px; text-align:center; margin-bottom:5px;"></div>
+    <div style="border-top:1px dashed #000; margin:5px 0;"></div>
+    <table style="width:100%; font-size:11px; border-collapse:collapse;">
+        <thead>
+            <tr>
+                <th style="text-align:left;">productos</th>
+                <th style="text-align:center;">pz</th>
+                <th style="text-align:right;">precio</th>
+            </tr>
+        </thead>
+        <tbody id="t-items-body"></tbody>
+    </table>
+    <div style="border-top:1px dashed #000; margin:5px 0;"></div>
+    <div id="t-subtotal" style="text-align:right; font-size:11px;"></div>
+    <div id="t-desc-val" style="text-align:right; font-size:11px;"></div>
+    <div id="t-total" style="text-align:right; font-weight:bold; font-size:13px; margin:5px 0;"></div>
     <div style="font-size:11px;">Pago: <span id="t-metodo"></span></div>
-    <div style="border-top:1px dashed #000; margin:10px 0;"></div>
-    <div style="text-align:center; font-size:11px;">¡GRACIAS POR TU COMPRA!</div>
+    <div style="border-top:1px dashed #000; margin:5px 0;"></div>
+    <div style="text-align:center; font-size:11px; margin-top:5px;">✨ ¡Gracias por comprar en INGE SHOP!</div>
+    <div style="border-top:1px dashed #000; margin:5px 0;"></div>
 </div>
 
 <script>
@@ -192,8 +203,8 @@
         const desc = parseFloat(document.getElementById('v-desc').value) || 0;
         
         let subtotal = 0;
-        const tablaTicket = document.getElementById('t-items');
-        tablaTicket.innerHTML = "";
+        const bodyTabla = document.getElementById('t-items-body');
+        bodyTabla.innerHTML = "";
 
         for(let i=0; i<ids.length; i++) {
             if(ids[i].value) {
@@ -204,7 +215,6 @@
 
                 if(cant > stock) return alert(`Stock insuficiente de ${opt.dataset.nombre}`);
 
-                // Descontar Stock
                 await fetch(`https://inge-shop.onrender.com/api/productos/${ids[i].value}`, {
                     method: 'PUT',
                     headers: {'Content-Type': 'application/json'},
@@ -213,30 +223,39 @@
 
                 let filaTotal = precio * cant;
                 subtotal += filaTotal;
-                tablaTicket.innerHTML += `<tr><td>${opt.dataset.nombre}</td><td style="text-align:center">${cant}</td><td style="text-align:right">$${filaTotal.toFixed(2)}</td></tr>`;
+                bodyTabla.innerHTML += `<tr><td style="padding:2px 0;">${opt.dataset.nombre}</td><td style="text-align:center">${cant}</td><td style="text-align:right">$${filaTotal.toFixed(2)}</td></tr>`;
             }
         }
 
         const totalFinal = subtotal - desc;
-        document.getElementById('t-fecha').innerText = `FECHA: ${new Date().toLocaleString()}`;
-        document.getElementById('t-desc').innerText = desc > 0 ? `DESCUENTO: -$${desc.toFixed(2)}` : "";
-        document.getElementById('t-total').innerText = `TOTAL: $${totalFinal.toFixed(2)}`;
+        document.getElementById('t-fecha').innerText = `📅 ${new Date().toLocaleString()}`;
+        document.getElementById('t-subtotal').innerText = `Subtotal: $${subtotal.toFixed(2)}`;
+        document.getElementById('t-desc-val').innerText = `Descuento: -$${desc.toFixed(2)}`;
+        document.getElementById('t-total').innerText = `Total: $${totalFinal.toFixed(2)}`;
         document.getElementById('t-metodo').innerText = document.getElementById('v-metodo').value;
 
-        // GENERAR IMAGEN
-        html2canvas(document.getElementById('ticket-visual')).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `Ticket-INGE-SHOP-${Date.now()}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            
-            const msj = `*INGE SHOP* ✨\n¡Gracias por tu compra! Te adjunto tu ticket digital.`;
-            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msj)}`, '_blank');
-            location.reload();
+        // GENERAR IMAGEN Y COPIAR (SIN DESCARGAR)
+        const ticketElement = document.getElementById('ticket-visual');
+        html2canvas(ticketElement, { scale: 2 }).then(canvas => {
+            canvas.toBlob(async (blob) => {
+                try {
+                    const data = [new ClipboardItem({ [blob.type]: blob })];
+                    await navigator.clipboard.write(data);
+                    
+                    const msj = `*INGE SHOP* ✨\n¡Gracias por tu compra! (Presiona Ctrl+V para enviar el ticket)`;
+                    const urlWa = `https://api.whatsapp.com/send?text=${encodeURIComponent(msj)}`;
+                    
+                    window.open(urlWa, '_blank');
+                    alert("✅ Stock actualizado. Ticket copiado. Elige al contacto y presiona Pegar.");
+                    location.reload();
+                } catch (err) {
+                    console.error("Error al copiar:", err);
+                    alert("No se pudo copiar automáticamente. Revisa los permisos.");
+                }
+            });
         });
     }
 
-    // Funciones Inventario Originales
     form.onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('prodId').value;
