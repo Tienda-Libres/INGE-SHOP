@@ -100,9 +100,9 @@
     <table style="width:100%; font-size:11px; border-collapse:collapse;">
         <thead>
             <tr>
-                <th style="text-align:left;">productos</th>
-                <th style="text-align:center;">pz</th>
-                <th style="text-align:right;">precio</th>
+                <th style="text-align:left;">Productos</th>
+                <th style="text-align:center;">Pz</th>
+                <th style="text-align:right;">Precio</th>
             </tr>
         </thead>
         <tbody id="t-items-body"></tbody>
@@ -113,7 +113,7 @@
     <div id="t-total" style="text-align:right; font-weight:bold; font-size:13px; margin:5px 0;"></div>
     <div style="font-size:11px;">Pago: <span id="t-metodo"></span></div>
     <div style="border-top:1px dashed #000; margin:5px 0;"></div>
-    <div style="text-align:center; font-size:11px; margin-top:5px;">✨ ¡Gracias por comprar en INGE SHOP!</div>
+    <div style="text-align:center; font-size:11px; margin-top:5px;">✨ ¡Gracias por comprar en INGE SHOP! ✨</div>
     <div style="border-top:1px dashed #000; margin:5px 0;"></div>
 </div>
 
@@ -242,7 +242,7 @@
                     const data = [new ClipboardItem({ [blob.type]: blob })];
                     await navigator.clipboard.write(data);
                     
-                    const msj = `*INGE SHOP* ✨\n¡Gracias por tu compra! (Presiona Ctrl+V para enviar el ticket)`;
+                    const msj = `*INGE SHOP* ✨\n¡Gracias por tu compra!`;
                     const urlWa = `https://api.whatsapp.com/send?text=${encodeURIComponent(msj)}`;
                     
                     window.open(urlWa, '_blank');
